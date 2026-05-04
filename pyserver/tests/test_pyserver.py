@@ -147,7 +147,6 @@ class TestServerIntegration:
         yield port
         await srv.stop()
 
-    @pytest.mark.asyncio
     async def test_getparam(self, server_port):
         reader, writer = await asyncio.open_connection(
             "127.0.0.1", server_port,
@@ -157,8 +156,8 @@ class TestServerIntegration:
         resp = await reader.read(1024)
         assert b"Range:" in resp
         writer.close()
+        await writer.wait_closed()
 
-    @pytest.mark.asyncio
     async def test_scan(self, server_port):
         reader, writer = await asyncio.open_connection(
             "127.0.0.1", server_port,
@@ -179,8 +178,8 @@ class TestServerIntegration:
         assert img.shape == (256,)  # 16*16 flattened
 
         writer.close()
+        await writer.wait_closed()
 
-    @pytest.mark.asyncio
     async def test_approach(self, server_port):
         reader, writer = await asyncio.open_connection(
             "127.0.0.1", server_port,
@@ -190,8 +189,8 @@ class TestServerIntegration:
         resp = await reader.read(1024)
         assert b"Approached" in resp
         writer.close()
+        await writer.wait_closed()
 
-    @pytest.mark.asyncio
     async def test_movearea(self, server_port):
         reader, writer = await asyncio.open_connection(
             "127.0.0.1", server_port,
@@ -201,3 +200,37 @@ class TestServerIntegration:
         resp = await reader.read(1024)
         assert b"crashes" in resp
         writer.close()
+        await writer.wait_closed()
+
+    async def test_tipshaping_stall(self, server_port):
+        reader, writer = await asyncio.open_connection(
+            "127.0.0.1", server_port,
+        )
+        writer.write(b"tipshaping(5n,10n,stall)")
+        await writer.drain()
+        resp = await reader.read(1024)
+        assert resp == b"0.5"
+        writer.close()
+        await writer.wait_closed()
+
+    async def test_tipshaping_dip(self, server_port):
+        reader, writer = await asyncio.open_connection(
+            "127.0.0.1", server_port,
+        )
+        writer.write(b"tipshaping(5n,10n,-10n,0,100m)")
+        await writer.drain()
+        resp = await reader.read(1024)
+        assert resp == b"1"
+        writer.close()
+        await writer.wait_closed()
+
+    async def test_tipclean(self, server_port):
+        reader, writer = await asyncio.open_connection(
+            "127.0.0.1", server_port,
+        )
+        writer.write(b"tipclean(5n,10n)")
+        await writer.drain()
+        resp = await reader.read(1024)
+        assert resp == b"1"
+        writer.close()
+        await writer.wait_closed()

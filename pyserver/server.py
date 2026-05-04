@@ -182,10 +182,10 @@ class InstrumentServer:
                     await writer.drain()
                 except Exception as e:
                     logger.error("Error: %s", e, exc_info=True)
-                    writer.write(
-                        encode_text_response(f"ERROR:{e}")
-                    )
-                    await writer.drain()
+                    # Close connection rather than sending text —
+                    # the client expects binary for scan commands
+                    # and has built-in retry logic.
+                    break
         except (asyncio.CancelledError, ConnectionResetError):
             pass
         finally:
@@ -193,7 +193,7 @@ class InstrumentServer:
             logger.info("Agent %s disconnected", addr)
 
     async def _dispatch(self, cmd: Command) -> bytes:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         c = self.config
 
         if isinstance(cmd, ScanCommand):

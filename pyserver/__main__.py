@@ -49,6 +49,9 @@ def main() -> None:
 
     if opts.ini:
         config = ServerConfig.from_ini(opts.ini)
+        # CLI args override INI values
+        config.host = opts.host
+        config.port = opts.port
     else:
         config = ServerConfig(host=opts.host, port=opts.port)
 
